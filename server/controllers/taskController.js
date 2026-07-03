@@ -19,7 +19,7 @@ const getAllTasks = async (req, res) => {
       return res.status(200).json({
         success: true,
         count: memoryTasks.length,
-        data: memoryTasks.slice().reverse(),
+        data: memoryTasks.slice().reverse().map(normalizeTask),
       });
     }
 
