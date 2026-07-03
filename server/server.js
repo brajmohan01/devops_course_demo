@@ -1,8 +1,8 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const taskRoutes = require('./routes/tasks');
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import taskRoutes from './routes/tasks.js';
 
 // Load environment variables
 dotenv.config();
@@ -35,21 +35,27 @@ app.use('*', (req, res) => {
 });
 
 // Database connection
-mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
-    console.log('Connected to MongoDB');
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-    });
-  })
-  .catch((error) => {
-    console.error('Database connection error:', error);
-    process.exit(1);
+const startServer = async () => {
+  if (process.env.MONGO_URI) {
+    try {
+      await mongoose.connect(process.env.MONGO_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      });
+      console.log('Connected to MongoDB');
+    } catch (error) {
+      console.error('Database connection error:', error);
+    }
+  } else {
+    console.warn('MONGO_URI is not set. Starting server without MongoDB.');
+  }
+
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
   });
+};
+
+startServer();
 
 // Graceful shutdown
 process.on('SIGINT', async () => {

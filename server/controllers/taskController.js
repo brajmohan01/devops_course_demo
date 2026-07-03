@@ -1,8 +1,28 @@
-const Task = require('../models/Task');
+import mongoose from 'mongoose';
+import Task from '../models/Task.js';
+
+const memoryTasks = [];
+
+const useMongo = () => Boolean(process.env.MONGO_URI && mongoose.connection.readyState === 1);
+
+const normalizeTask = (task) => ({
+  _id: task._id || task.id,
+  title: task.title,
+  description: task.description,
+  createdAt: task.createdAt || new Date().toISOString(),
+});
 
 // Get all tasks
 const getAllTasks = async (req, res) => {
   try {
+    if (!useMongo()) {
+      return res.status(200).json({
+        success: true,
+        count: memoryTasks.length,
+        data: memoryTasks.slice().reverse(),
+      });
+    }
+
     const tasks = await Task.find().sort({ createdAt: -1 });
     res.status(200).json({
       success: true,
@@ -28,6 +48,23 @@ const createTask = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Title and description are required',
+      });
+    }
+
+    if (!useMongo()) {
+      const task = {
+        id: `${Date.now()}`,
+        title: title.trim(),
+        description: description.trim(),
+        createdAt: new Date().toISOString(),
+      };
+
+      memoryTasks.unshift(task);
+
+      return res.status(201).json({
+        success: true,
+        message: 'Task created successfully',
+        data: task,
       });
     }
 
@@ -64,6 +101,24 @@ const deleteTask = async (req, res) => {
   try {
     const { id } = req.params;
 
+    if (!useMongo()) {
+      const index = memoryTasks.findIndex((task) => task.id === id || task._id === id);
+
+      if (index === -1) {
+        return res.status(404).json({
+          success: false,
+          message: 'Task not found',
+        });
+      }
+
+      memoryTasks.splice(index, 1);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Task deleted successfully',
+      });
+    }
+
     const task = await Task.findByIdAndDelete(id);
 
     if (!task) {
@@ -86,8 +141,4 @@ const deleteTask = async (req, res) => {
   }
 };
 
-module.exports = {
-  getAllTasks,
-  createTask,
-  deleteTask,
-};
+export { getAllTasks, createTask, deleteTask };
