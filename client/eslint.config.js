@@ -30,4 +30,12 @@ export default [
       ],
     },
   },
+  {
+    files: ["vite.config.js"],
+    languageOptions: {
+      globals: {
+        process: "readonly",
+      },
+    },
+  },
 ];
